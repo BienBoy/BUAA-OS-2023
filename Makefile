@@ -1,7 +1,5 @@
 .PHONY: clean
 
-all: out calc case_all case_add case_sub case_mul case_div
-
 out: calc case_all
 	./calc < case_all > out
 calc: calc.c
