@@ -6,7 +6,7 @@ void m_putch(char ch) {
 }
 
 char m_getch(void) {
-	panic("please implement");
+	return *((volatile char *)PUTCHAR_ADDRESS);
 }
 
 void m_halt(void) {
