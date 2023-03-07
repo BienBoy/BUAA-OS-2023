@@ -22,7 +22,7 @@ void vprintfmt(fmt_callback_t out, void *data, const char *fmt, va_list ap) {
 		if (*fmt != '%') {
 		/* flush the string found so far */
 		/* Exercise 1.4: Your code here. (2/8) */
-			print_char(out, data, *fmt, 0, 0);
+			print_char(out, data, *fmt, 1, 0);
 		/* check "are we hitting the end?" */
 		/* Exercise 1.4: Your code here. (3/8) */
 			fmt++;
