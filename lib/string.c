@@ -119,5 +119,5 @@ int sprintf(char *buf, const char *fmt, ...) {
 	va_start(ap, fmt);
 	vprintfmt(outputsf, (void*)&spd, fmt, ap);
 	va_end(ap);
-	return spd.len;
+	return strlen(buf);
 }
