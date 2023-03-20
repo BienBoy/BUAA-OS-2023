@@ -98,20 +98,20 @@ int strcmp(const char *p, const char *q) {
 	return 0;
 }
 
-int length;
+int slength;
 void outputsf(char *data, const char *buf, size_t len) {
 	for (int i = 0; i < len; i++)
-		data[length + i] = buf[i];
-	length += len;
-	data[length] = '\0';
+		data[slength + i] = buf[i];
+	slength += len;
+	data[slength] = '\0';
 }
 
 int sprintf(char *buf, const char *fmt, ...) {
 	va_list ap;
 
-	length = 0;
+	slength = 0;
 	va_start(ap, fmt);
 	vprintfmt(outputsf, buf, fmt, ap);
 	va_end(ap);
-	return strlen(buf);
+	return slength;
 }
