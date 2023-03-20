@@ -8,11 +8,11 @@ static void print_num(fmt_callback_t, void *, unsigned long, int, int, int, int,
 void vprintfmt(fmt_callback_t out, void *data, const char *fmt, va_list ap) {
 	char c;
 	const char *s;
-	long num;
+	long num, num2;
 
 	int width;
 	int long_flag; // output is long (rather than int)
-	int neg_flag;  // output is negative
+	int neg_flag, neg_flag2;  // output is negative
 	int ladjust;   // output is left-aligned
 	char padc;     // padding char
 
@@ -59,6 +59,7 @@ void vprintfmt(fmt_callback_t out, void *data, const char *fmt, va_list ap) {
 			fmt++;
 		}
 		neg_flag = 0;
+		neg_flag2 = 0;
 		switch (*fmt) {
 		case 'b':
 			if (long_flag) {
@@ -140,6 +141,34 @@ void vprintfmt(fmt_callback_t out, void *data, const char *fmt, va_list ap) {
 
 		case '\0':
 			fmt--;
+			break;
+		case 'R':
+			if (long_flag) {
+				num = va_arg(ap, long int);
+				num2 = va_arg(ap, long int);
+			} else {
+				num = va_arg(ap, int);
+				num2 = va_arg(ap, int);
+			}
+
+			/*
+			 * Refer to other parts (case 'b', case 'o', etc.) and func 'print_num' to
+			 * complete this part. Think the differences between case 'd' and the
+			 * others. (hint: 'neg_flag').
+			 */
+			if (num < 0) {
+				num = -num;
+				neg_flag = 1;
+			}
+			if (num2 < 0) {
+				num2 = -num2;
+				neg_flag2 = 1;
+			}
+			print_char(out, data, '(', 1, 0);
+			print_num(out, data, num, 10, neg_flag, width, ladjust, padc, 0);
+			print_char(out, data, ',', 1, 0);
+			print_num(out, data, num2, 10, neg_flag2, width, ladjust, padc, 0);
+			print_char(out, data, ')', 1, 0);
 			break;
 
 		default:
