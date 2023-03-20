@@ -98,26 +98,21 @@ int strcmp(const char *p, const char *q) {
 	return 0;
 }
 
-typedef struct {
-	char* buf;
-	int len;
-}spdata;
+int length;
 void outputsf(void *data, const char *buf, size_t len) {
-	spdata* spd = (spdata*)data;
+	char* cdata = (char*)data;
 	for (int i = 0; i < len; i++)
-		spd->buf[spd->len + i] = buf[i];
-	spd->len += len;
-	spd->buf[spd->len] = '\0';
+		cdata[length + i] = buf[i];
+	length += len;
+	cdata[length] = '\0';
 }
 
 int sprintf(char *buf, const char *fmt, ...) {
 	va_list ap;
 	
-	spdata spd;
-	spd.buf = buf;
-	spd.len = 0;
+	length = 0;
 	va_start(ap, fmt);
-	vprintfmt(outputsf, (void*)&spd, fmt, ap);
+	vprintfmt(outputsf, (void*)buf, fmt, ap);
 	va_end(ap);
-	return strlen(buf);
+	return length;
 }
