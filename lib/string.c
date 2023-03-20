@@ -102,8 +102,8 @@ int length;
 void outputsf(char *data, const char *buf, size_t len) {
 	for (int i = 0; i < len; i++)
 		data[length + i] = buf[i];
-	data[len] = '\0';
 	length += len;
+	data[length] = '\0';
 }
 
 int sprintf(char *buf, const char *fmt, ...) {
@@ -113,5 +113,5 @@ int sprintf(char *buf, const char *fmt, ...) {
 	va_start(ap, fmt);
 	vprintfmt(outputsf, buf, fmt, ap);
 	va_end(ap);
-	return strlen(buf);
+	return length;
 }
