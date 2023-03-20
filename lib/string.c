@@ -99,11 +99,12 @@ int strcmp(const char *p, const char *q) {
 }
 
 int slength;
-void outputsf(char *data, const char *buf, size_t len) {
+void outputsf(void *data, const char *buf, size_t len) {
+	char* cdata = (char*)data;
 	for (int i = 0; i < len; i++)
-		data[slength + i] = buf[i];
+		cdata[slength + i] = buf[i];
 	slength += len;
-	data[slength] = '\0';
+	cdata[slength] = '\0';
 }
 
 int sprintf(char *buf, const char *fmt, ...) {
