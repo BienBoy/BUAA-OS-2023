@@ -530,7 +530,7 @@ u_int page_perm_stat(Pde *pgdir, struct Page *pp, u_int perm_mask) {
 				continue;
 			if ((perm_mask & PTE_LIBRARY) && (*temp2 & PTE_LIBRARY) == 0)
 				continue;
-			if (PPN(PTE_ADDR(*temp2)) == page2ppn(pp)) {
+			if (PTE_ADDR(*temp2)>>12 == pp - pages) {
 				count++;
 			}
 		}
