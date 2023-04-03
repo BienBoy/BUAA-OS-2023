@@ -524,10 +524,12 @@ u_int page_perm_stat(Pde *pgdir, struct Page *pp, u_int perm_mask) {
 			}
 			if ((perm_mask & PTE_G) && (*temp2 & PTE_G) == 0)
 				continue;
-			//if ((perm_mask & PTE_COW) && (*temp2 & PTE_COW) == 0)
-			//	continue;
-			//if ((perm_mask & PTE_LIBRARY) && (*temp2 & PTE_LIBRARY) == 0)
-			//	continue;
+			if ((perm_mask & PTE_COW) && (*temp2 & PTE_COW) == 0)
+				continue;
+			if ((perm_mask & PTE_N) && (*temp2 & PTE_N) == 0)
+				continue;
+			if ((perm_mask & PTE_LIBRARY) && (*temp2 & PTE_LIBRARY) == 0)
+				continue;
 			if (PPN(PTE_ADDR(*temp2)) == page2ppn(pp)) {
 				count++;
 			}
