@@ -513,6 +513,8 @@ u_int page_perm_stat(Pde *pgdir, struct Page *pp, u_int perm_mask) {
 	 u_int count = 0;
 	 for (int i = 0; i < 1024; i++) {
 		temp = KADDR(PTE_ADDR(*(pgdir+i)));
+		if ((*temp & PTE_V) == 0)
+			continue;
 		for (int j = 0; j < 1024; j++) {
 			Pte* temp2 = temp + j;
 			if ((*temp2 & PTE_V) == 0)
