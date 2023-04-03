@@ -515,6 +515,7 @@ void page_check(void) {
 }
 
 //lab2-extra
+// 于课下完成，通过本地测试
 void swap_init() {
 	LIST_INIT(&page_free_swapable_list);
 	for (int i = SWAP_PAGE_BASE; i < SWAP_PAGE_END; i += BY2PG) {
@@ -529,8 +530,11 @@ struct Page *swap_alloc(Pde *pgdir, u_int asid) {
 	// Step 1: Ensure free page
 	if (LIST_EMPTY(&page_free_swapable_list)) {
 		/* Your Code Here (1/3) */
+		// 不存在空闲且可交换的物理页，则始终将第一页交换出内存
 		struct Page* toSwap = pa2page(SWAP_PAGE_BASE);
+		// 申请一页大小的外存空间
 		u_char* da = disk_alloc();
+		// 所有 PTE_V 为 1 且高 20 位为 p 的物理页号的页表项
 		for (int i = 0; i < 1024; i++) {
 			Pte* temp = KADDR(PTE_ADDR(*(pgdir + i)));
 			if (!(*(pgdir + i) & PTE_V))
@@ -540,13 +544,18 @@ struct Page *swap_alloc(Pde *pgdir, u_int asid) {
 				if (!(*temp2 & PTE_V))
 					continue;
 				if (PPN(PTE_ADDR(*temp2)) == page2ppn(toSwap)) {
+					// 无效化旧 TLB 表项
 					tlb_invalidate(asid, (i << 20) | (j << 10));
+					// 在高 20 位中填入 da 对应的外存页号并保留原来权限
 					*temp2 = (((da-swap_disk) / BY2PG)<<12) | (*temp2 & 0xFFF);
+					// 设置PTE_SWP为1
 					*temp2 = *temp2 | PTE_SWP;
+					// 设置PTE_V为0
 					*temp2 = (*temp2) & (~PTE_V);
 				}
 			}
 		}
+		// 将物理页 toSwap 上的内容拷贝到外存中 da 起始的一页空间上
 		memcpy(da, page2kva(toSwap), BY2PG);
 		LIST_INSERT_HEAD(&page_free_swapable_list, toSwap, pp_link);
 	}
@@ -563,6 +572,7 @@ struct Page *swap_alloc(Pde *pgdir, u_int asid) {
 static int is_swapped(Pde *pgdir, u_long va) {
 	/* Your Code Here (2/3) */
 	Pte* temp;
+	// 获取va对应的页表项
 	pgdir_walk(pgdir, va, 0, &temp);
 	return (*temp)&PTE_SWP;
 }
@@ -570,27 +580,37 @@ static int is_swapped(Pde *pgdir, u_long va) {
 static void swap(Pde *pgdir, u_int asid, u_long va) {
 	/* Your Code Here (3/3) */
 	struct Page* p;
+	// 申请一个物理页用于换入一个物理页
 	p = swap_alloc(pgdir, asid);
 	Pte* temp;
+	// 获取va对应的页表项
 	pgdir_walk(pgdir, va, 0, &temp);
+	// 将数据读入内存
 	memcpy(page2kva(p), ((*temp)>>12)*BY2PG + swap_disk, BY2PG);
+	// 外存页号
 	u_long da_out_ppn = (*temp)>>12;
+	// 遍历找到所有 PTE_SWP 为 1 且 PTE_V 为 0 且高 20 位为 da 对应的外存页号的页表项
 	for (int i = 0; i < 1024; i++) {
 		Pte* temp = KADDR(PTE_ADDR(*(pgdir + i)));
 		if (!(*(pgdir + i) & PTE_V))
 			continue;
 		for (int j = 0; j < 1024; j++) {
 			Pte *temp2 = temp + j;
-			if (!(*temp2 & PTE_SWP))
+			if (!(*temp2 & PTE_SWP) || (*temp2 & PTE_V))
 				continue;
 			if (PPN(PTE_ADDR(*temp2)) == da_out_ppn) {
+				// 无效化旧 TLB 表项
 				tlb_invalidate(asid, (i << 20) | (j << 10));
+				// 在高 20 位中填入 p 对应的物理页号并保留原权限
 				*temp2 = (page2ppn(p) << 12) | (*temp2 & 0xFFF);
+				// 设置PTE_V有效
 				*temp2 = *temp2 | PTE_V;
+				// 设置PTE_SWP有效
 				*temp2 = (*temp2) & (~PTE_SWP);
 			}
 		}
 	}
+	//  释放 da 起始的一页外存空间
 	disk_free(((*temp)>>12) * BY2PG + swap_disk);
 }
 
