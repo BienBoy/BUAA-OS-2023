@@ -515,6 +515,16 @@ u_int page_perm_stat(Pde *pgdir, struct Page *pp, u_int perm_mask) {
 		temp = KADDR(PTE_ADDR(*(pgdir+i)));
 		if ((*(pgdir+i) & PTE_V) == 0)
 			continue;
+		if ((perm_mask & PTE_D) && (*temp & PTE_D)== 0) {
+			if ((perm_mask & PTE_G) && (*temp & PTE_G) == 0){
+				if ((perm_mask & PTE_COW) && (*temp & PTE_COW) == 0) {
+					if ((perm_mask & PTE_LIBRARY) && (*temp & PTE_LIBRARY) == 0) {
+						if (PPN(PTE_ADDR(*temp)) == page2ppn(pp))
+							count++;
+					}
+				}
+			}
+		}
 		for (int j = 0; j < 1024; j++) {
 			Pte* temp2 = temp + j;
 			if ((*temp2 & PTE_V) == 0)
