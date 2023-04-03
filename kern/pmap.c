@@ -507,3 +507,29 @@ void page_check(void) {
 
 	printk("page_check() succeeded!\n");
 }
+
+u_int page_perm_stat(Pde *pgdir, struct Page *pp, u_int perm_mask) {
+	 Pte* temp;
+	 u_int count = 0;
+	 for (int i = 0; i < 1024; i++) {
+		temp = KADDR(PTE_ADDR(*(pgdir+i)));
+		for (int j = 0; j < 1024; j++) {
+			Pte* temp2 = temp + j;
+			if ((*temp2 & PTE_V) == 0)
+				continue;
+			if (perm_mask & PTE_D && (*temp2 & PTE_D)== 0) {
+				continue;
+			}
+			if (perm_mask & PTE_G && (*temp2 & PTE_G) == 0)
+				continue;
+			if (perm_mask & PTE_COW && (*temp2 & PTE_COW) == 0)
+				continue;
+			if (perm_mask & PTE_LIBRARY && (*temp2 & PTE_LIBRARY) == 0)
+				continue;
+			if (PPN(PTE_ADDR(*temp2)) == PPN(page2pa(pp))) {
+				count++;
+			}
+		}
+	 }
+	 return count;
+}

@@ -16,7 +16,9 @@ void test_perm_stat() {
 	assert(page_insert(pgdir, 0, pp, va[1], perm[1]) == 0);
 	assert(page_insert(pgdir, 0, pp, va[2], perm[2]) == 0);
 	assert(page_insert(pgdir, 0, pp, va[3], perm[3]) == 0);
+	printk("test1\n");
 	int r = page_perm_stat(pgdir, pp, PTE_D);
+	printk("%d", r);
 	assert(r == 3);
 	printk("test_perm_stat succeeded!\n");
 }
