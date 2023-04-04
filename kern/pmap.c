@@ -545,13 +545,13 @@ struct Page *swap_alloc(Pde *pgdir, u_int asid) {
 					continue;
 				if (PPN(PTE_ADDR(*temp2)) == page2ppn(toSwap)) {
 					// 无效化旧 TLB 表项
-					tlb_invalidate(asid, (i << 20) | (j << 10));
+					tlb_invalidate(asid, (i << PDSHIFT) | (j << PGSHIFT));
 					// 在高 20 位中填入 da 对应的外存页号并保留原来权限
-					*temp2 = (((da-swap_disk) / BY2PG)<<12) | (*temp2 & 0xFFF);
+					*temp2 = (((da-swap_disk) / BY2PG)<<PGSHIFT) | (*temp2 & 0xFFF);
 					// 设置PTE_SWP为1
 					*temp2 = *temp2 | PTE_SWP;
 					// 设置PTE_V为0
-					*temp2 = (*temp2) & (~PTE_V);
+					*temp2 = *temp2 & (~PTE_V);
 				}
 			}
 		}
@@ -582,13 +582,13 @@ static void swap(Pde *pgdir, u_int asid, u_long va) {
 	struct Page* p;
 	// 申请一个物理页用于换入一个物理页
 	p = swap_alloc(pgdir, asid);
-	Pte* temp;
 	// 获取va对应的页表项
+	Pte* temp;
 	pgdir_walk(pgdir, va, 0, &temp);
 	// 将数据读入内存
 	memcpy(page2kva(p), ((*temp)>>12)*BY2PG + swap_disk, BY2PG);
 	// 外存页号
-	u_long da_out_ppn = (*temp)>>12;
+	u_int da_out_ppn = PPN(PTE_ADDR(*temp));
 	// 遍历找到所有 PTE_SWP 为 1 且 PTE_V 为 0 且高 20 位为 da 对应的外存页号的页表项
 	for (int i = 0; i < 1024; i++) {
 		Pte* temp = KADDR(PTE_ADDR(*(pgdir + i)));
@@ -596,16 +596,16 @@ static void swap(Pde *pgdir, u_int asid, u_long va) {
 			continue;
 		for (int j = 0; j < 1024; j++) {
 			Pte *temp2 = temp + j;
-			if (!(*temp2 & PTE_SWP) || (*temp2 & PTE_V))
+			if (!(*temp2 & PTE_SWP))
 				continue;
 			if (PPN(PTE_ADDR(*temp2)) == da_out_ppn) {
 				// 无效化旧 TLB 表项
-				tlb_invalidate(asid, (i << 20) | (j << 10));
+				tlb_invalidate(asid, (i << PDSHIFT) | (j << PGSHIFT));
 				// 在高 20 位中填入 p 对应的物理页号并保留原权限
-				*temp2 = (page2ppn(p) << 12) | (*temp2 & 0xFFF);
+				*temp2 = (page2ppn(p) << PGSHIFT) | (*temp2 & 0xFFF);
 				// 设置PTE_V有效
 				*temp2 = *temp2 | PTE_V;
-				// 设置PTE_SWP有效
+				// 设置PTE_SWP无效
 				*temp2 = (*temp2) & (~PTE_SWP);
 			}
 		}
