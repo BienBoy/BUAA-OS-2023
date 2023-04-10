@@ -613,7 +613,7 @@ static void swap(Pde *pgdir, u_int asid, u_long va) {
 		}
 	}
 	//  释放 da 起始的一页外存空间
-	disk_free(da_out_ppn * BY2PG + swap_disk);
+	disk_free(da);
 }
 
 Pte swap_lookup(Pde *pgdir, u_int asid, u_long va) {
