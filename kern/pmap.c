@@ -515,7 +515,7 @@ void page_check(void) {
 }
 
 //lab2-extra
-// 于课下完成，通过本地测试
+// 于课下完成，通过强测
 void swap_init() {
 	LIST_INIT(&page_free_swapable_list);
 	for (int i = SWAP_PAGE_BASE; i < SWAP_PAGE_END; i += BY2PG) {
