@@ -547,7 +547,7 @@ struct Page *swap_alloc(Pde *pgdir, u_int asid) {
 					// 无效化旧 TLB 表项
 					tlb_invalidate(asid, (i << PDSHIFT) | (j << PGSHIFT));
 					// 在高 20 位中填入 da 对应的外存页号并保留原来权限
-					*temp2 = (((da-swap_disk) / BY2PG)<<PGSHIFT) | (*temp2 & 0xFFF);
+					*temp2 = ((PADDR(da) / BY2PG)<<PGSHIFT) | (*temp2 & 0xFFF);
 					// 设置PTE_SWP为1
 					*temp2 = *temp2 | PTE_SWP;
 					// 设置PTE_V为0
@@ -585,10 +585,12 @@ static void swap(Pde *pgdir, u_int asid, u_long va) {
 	// 获取va对应的页表项
 	Pte* temp;
 	pgdir_walk(pgdir, va, 0, &temp);
-	// 将数据读入内存
-	memcpy(page2kva(p), ((*temp)>>12)*BY2PG + swap_disk, BY2PG);
+	// 外存地址
+	u_char* da = KADDR(PTE_ADDR(*temp));
 	// 外存页号
 	u_int da_out_ppn = PPN(PTE_ADDR(*temp));
+	// 将数据读入内存
+	memcpy(page2kva(p), da, BY2PG);
 	// 遍历找到所有 PTE_SWP 为 1 且 PTE_V 为 0 且高 20 位为 da 对应的外存页号的页表项
 	for (int i = 0; i < 1024; i++) {
 		Pte* temp = KADDR(PTE_ADDR(*(pgdir + i)));
@@ -611,7 +613,7 @@ static void swap(Pde *pgdir, u_int asid, u_long va) {
 		}
 	}
 	//  释放 da 起始的一页外存空间
-	disk_free(((*temp)>>12) * BY2PG + swap_disk);
+	disk_free(da_out_ppn * BY2PG + swap_disk);
 }
 
 Pte swap_lookup(Pde *pgdir, u_int asid, u_long va) {
