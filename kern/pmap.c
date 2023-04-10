@@ -93,7 +93,7 @@ void page_init(void) {
 	LIST_INIT(&page_free_list);
 	/* Step 2: Align `freemem` up to multiple of BY2PG. */
 	/* Exercise 2.3: Your code here. (2/4) */
-	ROUND(freemem, BY2PG);
+	freemem = ROUND(freemem, BY2PG);
 	/* Step 3: Mark all memory below `freemem` as used (set `pp_ref` to 1) */
 	/* Exercise 2.3: Your code here. (3/4) */
 	int init_pages = PADDR(freemem) / BY2PG;
@@ -180,13 +180,14 @@ static int pgdir_walk(Pde *pgdir, u_long va, int create, Pte **ppte) {
 	/* Exercise 2.6: Your code here. (2/3) */
 	if (!(*pgdir_entryp & PTE_V)) {
 		if (create) {
-			if (page_alloc(&pp) == -E_NO_MEM)
-				return -E_NO_MEM;
+			// if (page_alloc(&pp) == -E_NO_MEM)
+			// 	return -E_NO_MEM;
+			try(page_alloc(&pp)); // Same effect as the above code
 			*pgdir_entryp = page2pa(pp);
 			*pgdir_entryp = (*pgdir_entryp) | PTE_V | PTE_D;
 			pp->pp_ref++;
 		} else {
-			*ppte = 0;
+			*ppte = NULL; // Set *ppte to a NULL pointer.
 			return 0;
 		}
 	}	
@@ -230,8 +231,9 @@ int page_insert(Pde *pgdir, u_int asid, struct Page *pp, u_long va, u_int perm) 
 	/* Step 3: Re-get or create the page table entry. */
 	/* If failed to create, return the error. */
 	/* Exercise 2.7: Your code here. (2/3) */
-	if (pgdir_walk(pgdir, va, 1, &pte) == -E_NO_MEM)
-		return -E_NO_MEM;
+	// if (pgdir_walk(pgdir, va, 1, &pte) == -E_NO_MEM)
+	// 	return -E_NO_MEM;
+	try(pgdir_walk(pgdir, va, 1, &pte)); // Same effect as the above code
 	/* Step 4: Insert the page to the page table entry with 'perm | PTE_V' and increase its
 	 * 'pp_ref'. */
 	/* Exercise 2.7: Your code here. (3/3) */
