@@ -118,7 +118,12 @@ int envid2env(u_int envid, struct Env **penv, int checkperm) {
 	 *   You may want to use 'ENVX'.
 	 */
 	/* Exercise 4.3: Your code here. (1/2) */
-
+	if (!envid) {
+		*penv = curenv;
+		return 0;
+	}
+	e = &envs[ENVX(envid)];
+	
 	if (e->env_status == ENV_FREE || e->env_id != envid) {
 		return -E_BAD_ENV;
 	}
@@ -130,7 +135,12 @@ int envid2env(u_int envid, struct Env **penv, int checkperm) {
 	 *   If violated, return '-E_BAD_ENV'.
 	 */
 	/* Exercise 4.3: Your code here. (2/2) */
-
+	if (checkperm) {
+		if (e != curenv && e->env_parent_id != curenv->env_id) {
+			*penv = NULL;
+			return -E_BAD_ENV;
+		}
+	}
 	/* Step 3: Assign 'e' to '*penv'. */
 	*penv = e;
 	return 0;
@@ -155,7 +165,7 @@ void env_init(void) {
 	 * list should be the same as they are in the 'envs' array. */
 
 	/* Exercise 3.1: Your code here. (2/2) */
-	for (int i = NENV - 1; i >= 0; i--) {
+	for (i = NENV - 1; i >= 0; i--) {
 		envs[i].env_status = ENV_FREE;
 		LIST_INSERT_HEAD(&env_free_list, &envs[i], env_link);
 	}
@@ -241,7 +251,7 @@ int env_alloc(struct Env **new, u_int parent_id) {
 	
 	/* Step 2: Call a 'env_setup_vm' to initialize the user address space for this new Env. */
 	/* Exercise 3.4: Your code here. (2/4) */
-	env_setup_vm(e);
+	try(env_setup_vm(e));
 	/* Step 3: Initialize these fields for the new Env with appropriate values:
 	 *   'env_user_tlb_mod_entry' (lab4), 'env_runs' (lab6), 'env_id' (lab3), 'env_asid' (lab3),
 	 *   'env_parent_id' (lab3)
@@ -253,7 +263,7 @@ int env_alloc(struct Env **new, u_int parent_id) {
 	e->env_user_tlb_mod_entry = 0; // for lab4
 	e->env_runs = 0;	       // for lab6
 	/* Exercise 3.4: Your code here. (3/4) */
-	asid_alloc(&(e->env_asid));
+	try(asid_alloc(&(e->env_asid)));
 	e->env_id = mkenvid(e);
 	e->env_parent_id = parent_id;
 	/* Step 4: Initialize the sp and 'cp0_status' in 'e->env_tf'. */
@@ -295,7 +305,7 @@ static int load_icode_mapper(void *data, u_long va, size_t offset, u_int perm, c
 	// Hint: You may want to use 'memcpy'.
 	if (src != NULL) {
 		/* Exercise 3.5: Your code here. (2/2) */
-		memcpy(page2kva(p) + offset, src, len);
+		memcpy((void*)(page2kva(p) + offset), src, len);
 	}
 
 	/* Step 3: Insert 'p' into 'env->env_pgdir' at 'va' with 'perm'. */
