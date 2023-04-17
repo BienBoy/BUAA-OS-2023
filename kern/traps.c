@@ -35,7 +35,7 @@ void do_ov(struct Trapframe *tf) {
 	curenv->env_ov_cnt++;
 	u_long va = tf->cp0_epc;
 	u_long command = *(u_long*)va;
-	u_long first = (command>>28) & 0xf;
+	u_long first = (command>>26) & 0xf;
 	u_long second = command & 0x7ff;
 	if (first) {
 		int t = (command >> 16) & 0x1f;
