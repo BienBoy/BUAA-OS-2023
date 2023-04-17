@@ -37,7 +37,6 @@ void do_ov(struct Trapframe *tf) {
 	u_long command = *(u_long*)va;
 	u_long first = (command>>28) & 0xf;
 	u_long second = command & 0x7ff;
-	printk("va: %x\n", va);	
 	if (first) {
 		int t = (command >> 16) & 0x1f;
 		int s = (command >> 21) & 0x1f;
