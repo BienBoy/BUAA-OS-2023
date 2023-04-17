@@ -47,8 +47,12 @@ void do_ov(struct Trapframe *tf) {
 		printk("addi ov handled\n");
 		env_pop_tf(tf, curenv->env_asid);
 	}
-	struct Page* p = page_lookup(cur_pgdir, va, NULL);
-	page_insert(curenv->env_pgdir, curenv->env_asid, p, va, PTE_D | PTE_V);
+	Pte *pt;                                                                   
+        Pde* pgdir = &cur_pgdir[PDX(va)];                                                 
+        pt = (Pte *)KADDR(PTE_ADDR(*pgdir));                                      
+	u_long perm = pt[PTX(va)] & 0xfff;
+	struct Page* p = page_lookup(curenv->env_pgdir, va, NULL);
+	page_insert(curenv->env_pgdir, curenv->env_asid, p, va, PTE_D | perm);
 	if (second == 0x20) {
 		*(u_long*)va = (command & ~0x7ff) | 0x21;
 		printk("add ov handled\n");
