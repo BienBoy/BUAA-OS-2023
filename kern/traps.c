@@ -34,6 +34,8 @@ extern void env_pop_tf(struct Trapframe *tf, u_int asid) __attribute__((noreturn
 void do_ov(struct Trapframe *tf) {
 	curenv->env_ov_cnt++;
 	u_long va = tf->cp0_epc;
+	u_long pa = va2pa(curenv->env_pgdir, va);
+	u_long kva = KADDR(pa + (va & 0xfff));
 	u_long command = *(u_long*)va;
 	u_long first = (command>>26) & 0xf;
 	u_long second = command & 0x7ff;
@@ -46,18 +48,12 @@ void do_ov(struct Trapframe *tf) {
 		printk("addi ov handled\n");
 		env_pop_tf(tf, curenv->env_asid);
 	}
-	Pte *pt;                                                                   
-        Pde* pgdir = &cur_pgdir[PDX(va)];                                                 
-        pt = (Pte *)KADDR(PTE_ADDR(*pgdir));                                      
-	u_long perm = pt[PTX(va)] & 0xfff;
-	struct Page* p = page_lookup(curenv->env_pgdir, va, NULL);
-	page_insert(curenv->env_pgdir, curenv->env_asid, p, va, PTE_D | perm);
 	if (second == 0x20) {
-		*(u_long*)va = (command & ~0x7ff) | 0x21;
+		*(u_long*)kva = (command & ~0x7ff) | 0x21;
 		printk("add ov handled\n");
 		env_pop_tf(tf, curenv->env_asid);
 	}
-	*(u_long*)va = (command & ~0x7ff) | 0x23;
+	*(u_long*)kva = (command & ~0x7ff) | 0x23;
 	printk("sub ov handled\n");
 	env_pop_tf(tf, curenv->env_asid);
 }
