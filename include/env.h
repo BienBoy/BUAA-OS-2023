@@ -37,6 +37,8 @@ struct Env {
 
 	// Lab 6 scheduler counts
 	u_int env_runs; // number of times been env_run'ed
+	//Lab3-extra
+	int env_ov_cnt; // 每个进程发生 Ov 异常的次数
 };
 
 LIST_HEAD(Env_list, Env);
