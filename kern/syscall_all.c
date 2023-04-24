@@ -492,7 +492,6 @@ int set_ipc(u_int envid, u_int value, u_int srcva, u_int perm) {
 	e->env_ipc_from = curenv->env_id;
 	e->env_ipc_perm = PTE_V | perm;
 	e->env_ipc_recving = 0;
-	printk("pk!\n");
 	/* Step 5: Set the target's status to 'ENV_RUNNABLE' again and insert it to the tail of
 	 * 'env_sched_list'. */
 	/* Exercise 4.8: Your code here. (7/8) */
@@ -508,26 +507,39 @@ int set_ipc(u_int envid, u_int value, u_int srcva, u_int perm) {
 		try(page_insert(e->env_pgdir, e->env_asid, p, e->env_ipc_dstva, perm));
 	}
 	for (int i = 0; i < e->env_children_num; i++) {
-		set_ipc(envid, value, srcva, perm);
+		set_ipc(e->env_children[i], value, srcva, perm);
 	}
 	return 0;
 }
 
-int sys_ipc_try_broadcast(u_int value, u_int srcva, u_int perm) {
+int sys_ipc_try_broadcast(u_int value, u_int srcva, u_int perm, u_int rec) {
 	/* Step 1: Check if 'srcva' is either zero or a legal address. */
 	/* Exercise 4.8: Your code here. (4/8) */
+	if (rec) {
+		if (!curenv->env_parent_id)
+			return 0;
+		struct Env* temp;
+		envid2env(curenv->env_parent_id, &temp, 0);
+		int flag = 0;
+		for (int i = 0; i < temp->env_children_num; i++) {
+			if (temp->env_children[i] == curenv->env_id)
+				flag = 1;
+		}
+		if (!flag) {
+			temp->env_children[temp->env_children_num]=curenv->env_id;
+			temp->env_children_num++;
+		}
+		return 0;
+	}
 	if (srcva && is_illegal_va(srcva)) {
 		return -E_INVAL;
 	}
 	/* Step 3: Check if the target is waiting for a message. */
 	/* Exercise 4.8: Your code here. (6/8) */
 	if (!is_recving(curenv->env_id)) {
-		printk("waiting\n");
 		return -E_IPC_NOT_RECV;
 	}
-	printk("%d\n", curenv->env_children_num);
 	for (int i = 0; i < curenv->env_children_num; i++) {
-		printk("1\n");
 		set_ipc(curenv->env_children[i], value, srcva, perm);
 	}
 	return 0;

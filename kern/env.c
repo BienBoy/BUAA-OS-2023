@@ -267,7 +267,6 @@ int env_alloc(struct Env **new, u_int parent_id) {
 	e->env_id = mkenvid(e);
 	e->env_parent_id = parent_id;
 	e->env_children_num = 0;
-	printk("parent_id: %d\n", parent_id);
 	if (parent_id) {
 		printk("in\n");
 		struct Env *parent;

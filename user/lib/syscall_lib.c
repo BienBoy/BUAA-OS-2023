@@ -61,8 +61,8 @@ int syscall_ipc_recv(void *dstva) {
 	return msyscall(SYS_ipc_recv, dstva);
 }
 
-int syscall_ipc_try_broadcast(u_int value, const void *srcva, u_int perm) {
-	return msyscall(SYS_ipc_try_broadcast, value, srcva, perm);
+int syscall_ipc_try_broadcast(u_int value, const void *srcva, u_int perm, u_int test) {
+	return msyscall(SYS_ipc_try_broadcast, value, srcva, perm, test);
 }
 
 int syscall_cgetc() {
