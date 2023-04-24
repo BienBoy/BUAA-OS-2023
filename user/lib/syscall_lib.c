@@ -61,6 +61,14 @@ int syscall_ipc_recv(void *dstva) {
 	return msyscall(SYS_ipc_recv, dstva);
 }
 
+void syscall_set_gid(u_int gid) {
+	msyscall(SYS_set_gid, gid);
+}
+
+int syscall_ipc_try_group_send(u_int whom, u_int val, const void *srcva, u_int perm) {
+	return msyscall(SYS_ipc_try_group_send, whom, val, srcva, perm);
+}
+
 int syscall_cgetc() {
 	return msyscall(SYS_cgetc);
 }
