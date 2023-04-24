@@ -466,6 +466,74 @@ int sys_read_dev(u_int va, u_int pa, u_int len) {
 	return 0;
 }
 
+int is_recving(u_int envid) {
+	struct Env *e;
+	envid2env(envid, &e, 0);
+	for (int i = 0; i < e->env_children_num; i++) {
+		struct Env *tmp;
+		envid2env(e->env_children[i], &tmp, 0);
+		if (!tmp->env_ipc_recving) {
+			return 0;
+		}
+		int temp = is_recving(e->env_children[i]);
+		if (!temp) {
+			return 0;
+		}
+	}
+	return 1;
+}
+
+int set_ipc(u_int envid, u_int value, u_int srcva, u_int perm) {
+	struct Env *e;
+	struct Page *p;
+	envid2env(envid, &e, 0);
+	/* Step 4: Set the target's ipc fields. */
+	e->env_ipc_value = value;
+	e->env_ipc_from = curenv->env_id;
+	e->env_ipc_perm = PTE_V | perm;
+	e->env_ipc_recving = 0;
+	printk("pk!\n");
+	/* Step 5: Set the target's status to 'ENV_RUNNABLE' again and insert it to the tail of
+	 * 'env_sched_list'. */
+	/* Exercise 4.8: Your code here. (7/8) */
+	e->env_status = ENV_RUNNABLE;
+	TAILQ_INSERT_TAIL(&env_sched_list, e, env_sched_link);
+	/* Step 6: If 'srcva' is not zero, map the page at 'srcva' in 'curenv' to 'e->env_ipc_dstva'
+	 * in 'e'. */
+	/* Return -E_INVAL if 'srcva' is not zero and not mapped in 'curenv'. */
+	if (srcva != 0) {
+		/* Exercise 4.8: Your code here. (8/8) */
+		if (!(p = page_lookup(curenv->env_pgdir, srcva, NULL)))
+			return -E_INVAL;
+		try(page_insert(e->env_pgdir, e->env_asid, p, e->env_ipc_dstva, perm));
+	}
+	for (int i = 0; i < e->env_children_num; i++) {
+		set_ipc(envid, value, srcva, perm);
+	}
+	return 0;
+}
+
+int sys_ipc_try_broadcast(u_int value, u_int srcva, u_int perm) {
+	/* Step 1: Check if 'srcva' is either zero or a legal address. */
+	/* Exercise 4.8: Your code here. (4/8) */
+	if (srcva && is_illegal_va(srcva)) {
+		return -E_INVAL;
+	}
+	/* Step 3: Check if the target is waiting for a message. */
+	/* Exercise 4.8: Your code here. (6/8) */
+	if (!is_recving(curenv->env_id)) {
+		printk("waiting\n");
+		return -E_IPC_NOT_RECV;
+	}
+	printk("%d\n", curenv->env_children_num);
+	for (int i = 0; i < curenv->env_children_num; i++) {
+		printk("1\n");
+		set_ipc(curenv->env_children[i], value, srcva, perm);
+	}
+	return 0;
+}
+
+
 void *syscall_table[MAX_SYSNO] = {
     [SYS_putchar] = sys_putchar,
     [SYS_print_cons] = sys_print_cons,
@@ -485,6 +553,7 @@ void *syscall_table[MAX_SYSNO] = {
     [SYS_cgetc] = sys_cgetc,
     [SYS_write_dev] = sys_write_dev,
     [SYS_read_dev] = sys_read_dev,
+    [SYS_ipc_try_broadcast] = sys_ipc_try_broadcast
 };
 
 /* Overview:

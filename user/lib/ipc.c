@@ -37,3 +37,11 @@ u_int ipc_recv(u_int *whom, void *dstva, u_int *perm) {
 
 	return env->env_ipc_value;
 }
+
+void ipc_broadcast(u_int val, void * srcva, u_int perm) {
+	int r;
+	while ((r = syscall_ipc_try_broadcast(val, srcva, perm)) == -E_IPC_NOT_RECV) {
+		syscall_yield();
+	}
+	user_assert(r == 0);
+}
