@@ -485,12 +485,12 @@ int sys_ipc_try_group_send(u_int whom, u_int val, const void *srcva, u_int perm)
 	/* Exercise 4.8: Your code here. (5/8) */
 	try(envid2env(whom, &e, 0));
 	/* Step 3: Check if the target is waiting for a message. */
-	/* Exercise 4.8: Your code here. (6/8) */
-	if (e->env_gid != curenv->env_gid) {
-		return -E_IPC_NOT_GROUP;
-	}
+	/* Exercise 4.8: Your code here. (6/8) */	
 	if (!e->env_ipc_recving) {
 		return -E_IPC_NOT_RECV;
+	}
+	if (e->env_gid != curenv->env_gid) {
+		return -E_IPC_NOT_GROUP;
 	}
 	/* Step 4: Set the target's ipc fields. */
 	e->env_ipc_value = val;
