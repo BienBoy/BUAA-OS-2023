@@ -480,8 +480,11 @@ int sys_sem_init(const char *name, int init_value, int checkperm) {
 	}
 	return sem_num++;
 }
-void sys_sem_add(int sem_id, int change) {
+int sys_sem_add(int sem_id, int change) {
+	if (!value[sem_id][0] && change < 0)
+		return 0;
 	value[sem_id][0] += change;
+	return 1;
 }
 int sys_sem_needwait(int sem_id) {
 	return !value[sem_id][0];

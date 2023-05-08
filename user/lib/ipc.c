@@ -45,14 +45,9 @@ int sem_wait(int sem_id) {
 	int value;
 	if ((value = syscall_sem_getvalue(sem_id))<0)
 		return value;
-	if (value) {
-		syscall_sem_add(sem_id, -1);
-		return 0;
-	}
-	while (!syscall_sem_getvalue(sem_id)) {
+	while (!syscall_sem_add(sem_id, -1)) {
 		syscall_yield();
 	}
-	syscall_sem_add(sem_id, -1);
 	return 0;
 }
 int sem_post(int sem_id) {

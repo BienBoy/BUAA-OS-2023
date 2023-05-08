@@ -80,7 +80,7 @@ int sem_post(int sem_id);
 int sem_getvalue(int sem_id);
 int sem_getid(const char *name);
 int syscall_sem_init(const char *name, int init_value, int checkperm);
-void syscall_sem_add(int sem_id, int change);
+int syscall_sem_add(int sem_id, int change);
 int syscall_sem_needwait(int sem_id);
 int syscall_sem_getvalue(int sem_id);
 int syscall_sem_getid(const char *name);
