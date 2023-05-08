@@ -43,8 +43,9 @@ void barrier_alloc(int n) {
 }
 
 void barrier_wait() {
-	syscall_barrier_wait(1);
-	while (syscall_barrier_wait(0)) {
+	int isfirst = 1;
+	while (syscall_barrier_wait(isfirst)) {
+		isfirst = 0;
 		syscall_yield();
 	}
 }

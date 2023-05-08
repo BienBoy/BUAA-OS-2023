@@ -8,8 +8,6 @@
 
 extern struct Env *curenv;
 
-// lab4_2_exam
-u_int barrier = 0;
 
 /* Overview:
  * 	This function is used to print a character on screen.
@@ -469,6 +467,8 @@ int sys_read_dev(u_int va, u_int pa, u_int len) {
 	return 0;
 }
 
+// lab4_2_exam
+u_int barrier = 0;
 void sys_barrier_alloc(int n) {
 	barrier = n;
 }
