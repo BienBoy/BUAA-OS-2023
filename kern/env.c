@@ -434,11 +434,8 @@ static inline void pre_env_run(struct Env *e) {
 #ifdef MOS_SCHED_MAX_TICKS
 	static int count = 0;
 	if (count > MOS_SCHED_MAX_TICKS) {
-		printk("%4d: ticks exceeded the limit %d\n", count, MOS_SCHED_MAX_TICKS);
 		halt();
 	}
-	printk("%4d: %08x\n", count, e->env_id);
-	count++;
 #endif
 #ifdef MOS_SCHED_END_PC
 	struct Trapframe *tf = (struct Trapframe *)KSTACKTOP - 1;
