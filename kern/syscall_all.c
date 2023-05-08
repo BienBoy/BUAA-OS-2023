@@ -466,6 +466,64 @@ int sys_read_dev(u_int va, u_int pa, u_int len) {
 	return 0;
 }
 
+int sem_num;
+char sem[10][40];
+int value[10][3];
+int sys_sem_init(const char *name, int init_value, int checkperm) {
+	if (sem_num >= 10)
+		return -E_NO_SEM;
+	strcpy(sem[sem_num], name);
+	value[sem_num][0] = init_value;
+	value[sem_num][1] = checkperm;
+	if (checkperm) {
+		struct Env* env;
+		envid2env(0, &env, 0);
+		value[sem_num][2] = env->env_id;
+	}
+	return sem_num++;
+}
+void sys_sem_add(int sem_id, int change) {
+	value[sem_id][0] += change;
+}
+int sys_sem_needwait(int sem_id) {
+	return !value[sem_id][0];
+}
+int check(int envid, int target) {
+	struct Env* env;
+	envid2env(envid, &env, 0);
+	if (env->env_id == target) {
+		return 1;
+	}
+	if (!env->env_parent_id) {
+		return 0;
+	}
+	return check(env->env_parent_id, target);
+}
+int sys_sem_getvalue(int sem_id) {
+	if (sem_id >= sem_num)
+		return -E_NO_SEM;
+	if (value[sem_id][1] && !check(0, value[sem_id][2])) {
+		return -E_NO_SEM;
+	}
+	return value[sem_id][0];	
+}
+int sys_sem_getid(const char *name) {	
+	int have = 0, i;
+	for (i = 0; i < sem_num; i++) {
+		if (!strcmp(sem[i], name)) {
+			have = 1;
+			break;
+		}
+	}
+	if (!have) {
+		return -E_NO_SEM;
+	}
+	if (value[i][1] && !check(0, value[i][2])) {
+		return -E_NO_SEM;
+	}
+	return i;
+}
+
 void *syscall_table[MAX_SYSNO] = {
     [SYS_putchar] = sys_putchar,
     [SYS_print_cons] = sys_print_cons,
@@ -485,6 +543,11 @@ void *syscall_table[MAX_SYSNO] = {
     [SYS_cgetc] = sys_cgetc,
     [SYS_write_dev] = sys_write_dev,
     [SYS_read_dev] = sys_read_dev,
+    [SYS_sem_init] = sys_sem_init,
+    [SYS_sem_add] = sys_sem_add,
+    [SYS_sem_needwait] = sys_sem_needwait,
+    [SYS_sem_getid] = sys_sem_getid,
+    [SYS_sem_getvalue] = sys_sem_getvalue
 };
 
 /* Overview:

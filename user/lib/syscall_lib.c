@@ -61,6 +61,22 @@ int syscall_ipc_recv(void *dstva) {
 	return msyscall(SYS_ipc_recv, dstva);
 }
 
+int syscall_sem_init(const char *name, int init_value, int checkperm) {
+	return msyscall(SYS_sem_init, name, init_value, checkperm);
+}
+void syscall_sem_add(int sem_id, int change) {
+	msyscall(SYS_sem_add, sem_id, change);
+}
+int syscall_sem_needwait(int sem_id) {
+	return msyscall(SYS_sem_needwait, sem_id);
+}
+int syscall_sem_getvalue(int sem_id) {
+	return msyscall(SYS_sem_getvalue, sem_id);
+}                                           
+int syscall_sem_getid(const char *name) {
+	return msyscall(SYS_sem_getid, name);
+}
+
 int syscall_cgetc() {
 	return msyscall(SYS_cgetc);
 }
