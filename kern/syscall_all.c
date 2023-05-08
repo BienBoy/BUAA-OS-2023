@@ -474,7 +474,7 @@ void sys_barrier_alloc(int n) {
 }
 
 int sys_barrier_wait(int isfirst) {
-	if (isfirst)
+	if (isfirst && barrier)
 		barrier--;
 	return barrier;
 }
