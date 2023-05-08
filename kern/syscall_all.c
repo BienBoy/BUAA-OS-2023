@@ -8,6 +8,9 @@
 
 extern struct Env *curenv;
 
+// lab4_2_exam
+u_int barrier = 0;
+
 /* Overview:
  * 	This function is used to print a character on screen.
  *
@@ -466,6 +469,16 @@ int sys_read_dev(u_int va, u_int pa, u_int len) {
 	return 0;
 }
 
+void sys_barrier_alloc(int n) {
+	barrier = n;
+}
+
+int sys_barrier_wait(int isfirst) {
+	if (isfirst)
+		barrier--;
+	return barrier;
+}
+
 void *syscall_table[MAX_SYSNO] = {
     [SYS_putchar] = sys_putchar,
     [SYS_print_cons] = sys_print_cons,
@@ -485,6 +498,8 @@ void *syscall_table[MAX_SYSNO] = {
     [SYS_cgetc] = sys_cgetc,
     [SYS_write_dev] = sys_write_dev,
     [SYS_read_dev] = sys_read_dev,
+    [SYS_barrier_alloc] = sys_barrier_alloc,
+    [SYS_barrier_wait] = sys_barrier_wait
 };
 
 /* Overview:
