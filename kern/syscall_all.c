@@ -476,9 +476,7 @@ int sys_sem_init(const char *name, int init_value, int checkperm) {
 	value[sem_num][0] = init_value;
 	value[sem_num][1] = checkperm;
 	if (checkperm) {
-		struct Env* env;
-		envid2env(0, &env, 0);
-		value[sem_num][2] = env->env_id;
+		value[sem_num][2] = curenv->env_id;
 	}
 	return sem_num++;
 }

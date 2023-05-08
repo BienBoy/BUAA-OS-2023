@@ -49,7 +49,7 @@ int sem_wait(int sem_id) {
 		syscall_sem_add(sem_id, -1);
 		return 0;
 	}
-	while (syscall_sem_getvalue(sem_id)) {
+	while (!syscall_sem_getvalue(sem_id)) {
 		syscall_yield();
 	}
 	syscall_sem_add(sem_id, -1);
