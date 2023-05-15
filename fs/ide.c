@@ -80,3 +80,77 @@ void ide_write(u_int diskno, u_int secno, void *src, u_int nsecs) {
 		}
 	}
 }
+
+// lab5-1-extra
+#define FLASH2BOLCK 32
+int flash_map[FLASH2BOLCK];
+int flash_bit_map[FLASH2BOLCK];
+int flash_use[FLASH2BOLCK];
+
+void ssd_init() {
+	memset(flash_map, -1, sizeof(flash_map));
+	memset(flash_bit_map, 1, sizeof(flash_bit_map));
+	memset(flash_use, 0, sizeof(flash_use));
+}
+
+int ssd_read(u_int logic_no, void *dst) {
+	int flash_no = flash_map[logic_no];
+	if (flash_no < 0) {
+		return -1;
+	}
+	ide_read(0, flash_no, dst, 1);
+	return 0;
+}
+
+void ssd_erase_physic(u_int flash_no) {
+	int temp[128] = {0};
+	ide_write(0, flash_no, temp, 1);
+	flash_use[flash_no]++;
+	flash_bit_map[flash_no] = 1;
+}
+
+int get_new_block() {
+	int min = 1<<30, flash_no, min_unwritable = 1<<30, flash_no_unwritable;
+	for (int i = 0; i < FLASH2BOLCK; i++) {
+		if (flash_bit_map[i] && min > flash_use[i]) {
+			min = flash_use[i];
+			flash_no = i;
+		}
+		if (!flash_bit_map[i] && min_unwritable > flash_use[i]) {
+			min_unwritable = flash_use[i];
+			flash_no_unwritable = i;
+		}
+	}
+	if (min >= 5) {
+		int temp[128];
+		ide_read(0, flash_no_unwritable, temp, 1);
+		ide_write(0, flash_no, temp, 1);
+		flash_bit_map[flash_no] = 0;
+		for (int i = 0; i < FLASH2BOLCK; i++) {
+			if (flash_map[i] == flash_no_unwritable) {
+				flash_map[i] = flash_no;
+			}
+		}
+		ssd_erase_physic(flash_no_unwritable);
+		return flash_no_unwritable;
+	}
+	return flash_no;
+}
+
+void ssd_write(u_int logic_no, void *src) {
+	int flash_no = flash_map[logic_no];
+	ssd_erase(logic_no);
+	flash_no = get_new_block();
+	flash_map[logic_no] = flash_no;
+	ide_write(0, flash_no, src, 1);
+	flash_bit_map[flash_no] = 0;
+}
+
+void ssd_erase(u_int logic_no) {
+	int flash_no = flash_map[logic_no];
+	if (flash_no < 0) {
+		return;
+	}
+	ssd_erase_physic(flash_no);
+	flash_map[logic_no] = -1;
+}
