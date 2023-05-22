@@ -40,7 +40,7 @@ int open(const char *path, int mode) {
 	// 'fd2data'. Set 'size' and 'fileid' correctly with the value in 'fd' as a 'Filefd'.
 	char *va;
 	struct Filefd *ffd;
-	u_int size, fileid, type;
+	u_int size, fileid;
 	/* Exercise 5.9: Your code here. (3/5) */
 	va = fd2data(fd);
 	ffd = (struct Filefd*)fd;
@@ -55,6 +55,7 @@ int open(const char *path, int mode) {
 	if (ffd->f_file.f_type == FTYPE_LNK) {
 		char temp[MAXPATHLEN];
 		memcpy(temp, va, size);
+		file_close(fd);
 		return open(temp, mode);
 	}
 	// Step 5: Return the number of file descriptor using 'fd2num'.
