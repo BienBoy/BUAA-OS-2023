@@ -135,3 +135,20 @@ int fsipc_remove(const char *path) {
 int fsipc_sync(void) {
 	return fsipc(FSREQ_SYNC, fsipcbuf, 0, 0);
 }
+
+int fsipc_openat(u_int dir_fileid, const char *path, u_int omode, struct Fd *fd) {
+	u_int perm;
+	struct Fsreq_openat *req;
+
+	req = (struct Fsreq_openat *)fsipcbuf;
+
+	// The path is too long.
+	if (strlen(path) >= MAXPATHLEN) {
+		return -E_BAD_PATH;
+	}
+	
+	req->dir_fileid = dir_fileid;
+	strcpy((char *)req->req_path, path);
+	req->req_omode = omode;
+	return fsipc(FSREQ_OPENAT, req, fd, &perm);
+}

@@ -100,6 +100,8 @@ int fsipc_dirty(u_int, u_int);
 int fsipc_remove(const char *);
 int fsipc_sync(void);
 int fsipc_incref(u_int);
+// Lab5-2-exam
+int fsipc_openat(u_int dir_fileid, const char *path, u_int omode, struct Fd *fd);
 
 // fd.c
 int close(int fd);
@@ -118,6 +120,8 @@ int read_map(int fd, u_int offset, void **blk);
 int remove(const char *path);
 int ftruncate(int fd, u_int size);
 int sync(void);
+// Lab5-2-exam
+int openat(int dirfd, const char *path, int mode);
 
 #define user_assert(x)                                                                             \
 	do {                                                                                       \
