@@ -40,12 +40,17 @@ int open(const char *path, int mode) {
 	// 'fd2data'. Set 'size' and 'fileid' correctly with the value in 'fd' as a 'Filefd'.
 	char *va;
 	struct Filefd *ffd;
-	u_int size, fileid;
+	u_int size, fileid, type;
 	/* Exercise 5.9: Your code here. (3/5) */
 	va = fd2data(fd);
 	ffd = (struct Filefd*)fd;
 	size = ffd->f_file.f_size;
 	fileid = ffd->f_fileid;
+	if (ffd->f_file.f_type == FTYPE_LNK) {
+		char temp[4096];
+		memcpy(temp, va, size);
+		return open(temp, mode);
+	}
 	// Step 4: Alloc pages and map the file content using 'fsipc_map'.
 	for (int i = 0; i < size; i += BY2PG) {
 		/* Exercise 5.9: Your code here. (4/5) */
