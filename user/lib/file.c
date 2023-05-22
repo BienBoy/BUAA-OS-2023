@@ -55,6 +55,7 @@ int open(const char *path, int mode) {
 	if (ffd->f_file.f_type == FTYPE_LNK) {
 		char temp[MAXPATHLEN];
 		memcpy(temp, va, size);
+		temp[size] = '\0';
 		file_close(fd);
 		return open(temp, mode);
 	}
