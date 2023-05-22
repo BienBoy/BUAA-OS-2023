@@ -46,17 +46,17 @@ int open(const char *path, int mode) {
 	ffd = (struct Filefd*)fd;
 	size = ffd->f_file.f_size;
 	fileid = ffd->f_fileid;
-	if (ffd->f_file.f_type == FTYPE_LNK) {
-		char temp[4096];
-		memcpy(temp, va, size);
-		return open(temp, mode);
-	}
+	
 	// Step 4: Alloc pages and map the file content using 'fsipc_map'.
 	for (int i = 0; i < size; i += BY2PG) {
 		/* Exercise 5.9: Your code here. (4/5) */
 		try(fsipc_map(fileid, i, va + i));	
 	}
-
+	if (ffd->f_file.f_type == FTYPE_LNK) {
+		char temp[MAXPATHLEN];
+		memcpy(temp, va, size);
+		return open(temp, mode);
+	}
 	// Step 5: Return the number of file descriptor using 'fd2num'.
 	/* Exercise 5.9: Your code here. (5/5) */
 	return fd2num(fd);
