@@ -74,3 +74,33 @@ int syscall_read_dev(void *va, u_int dev, u_int len) {
 	/* Exercise 5.2: Your code here. (2/2) */
 	return msyscall(SYS_read_dev, va, dev, len);
 }
+
+int syscall_set_signal_entry(u_int envid, void (*func)(int signum, struct Trapframe *tf)) {
+	return msyscall(SYS_set_signal_entry, envid, func);
+}
+
+int syscall_sigaction(u_int envid, int signum, const struct sigaction *act, struct sigaction *oldact) {
+	// 提前尝试写入，避免内核态写时复制的问题
+    if (oldact) {
+        memset(oldact, 0, 1);
+    }
+
+	return msyscall(SYS_sigaction, envid, signum, act, oldact);
+}
+
+int syscall_sigprocmask(u_int envid, int how, const sigset_t *set, sigset_t *oldset) {
+	// 提前尝试写入，避免内核态写时复制的问题
+    if (oldset) {
+        memset(oldset, 0, 1);
+    }
+
+	return msyscall(SYS_sigprocmask, envid, how, set, oldset);
+}
+
+int syscall_kill(u_int envid, int sig) {
+	return msyscall(SYS_kill, envid, sig);
+}
+
+int syscall_recover_after_signal(struct Trapframe *tf) {
+	return msyscall(SYS_recover_after_signal, tf);
+}

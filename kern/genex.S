@@ -15,6 +15,10 @@ END(handle_\exception)
 .text
 
 FEXPORT(ret_from_exception)
+	move    a0, sp
+	addiu   sp, sp, -8
+	jal     do_signal  /* 判断有无信号，有则处理，无则返回 */
+	addiu   sp, sp, 8
 	RESTORE_SOME
 	lw      k0, TF_EPC(sp)
 	lw      sp, TF_REG29(sp) /* Deallocate stack */

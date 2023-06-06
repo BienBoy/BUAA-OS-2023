@@ -365,6 +365,20 @@ struct Env *env_create(const void *binary, size_t size, int priority) {
 	/* Exercise 3.7: Your code here. (3/3) */
 	load_icode(e, binary, size);
 	TAILQ_INSERT_HEAD(&env_sched_list, e, env_sched_link);
+
+	// 初始化所有信号的注册函数
+	memset(e->env_sigactions, 0, sizeof(e->env_sigactions));
+	// 初始化进程的信号掩码
+	memset(&(e->env_signal_mask), 0, sizeof(e->env_signal_mask));
+	// 无正在处理的信号
+	e->env_signal = 0;
+	// 初始化等待处理的信号队列
+	TAILQ_INIT(&(e->env_pending_signals));
+	// 初始化阻塞信号队列
+	TAILQ_INIT(&(e->env_blocking_signals));
+	// 初始化处理信号的函数入口
+	e->env_signal_entry = NULL;
+
 	return e;
 }
 

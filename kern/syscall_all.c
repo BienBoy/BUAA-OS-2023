@@ -5,6 +5,7 @@
 #include <printk.h>
 #include <sched.h>
 #include <syscall.h>
+#include <queue.h>
 
 extern struct Env *curenv;
 
@@ -248,6 +249,11 @@ int sys_exofork(void) {
 	/* Exercise 4.9: Your code here. (4/4) */
 	e->env_status = ENV_NOT_RUNNABLE;
 	e->env_pri = curenv->env_pri;
+	
+	// 继承父进程的信号注册函数
+	memset(e->env_sigactions, curenv->env_sigactions, sizeof(curenv->env_sigactions));
+	// 继承父进程的信号处理函数入口
+	e->env_signal_entry = curenv->env_signal_entry;
 	return e->env_id;
 }
 
@@ -482,6 +488,150 @@ int sys_read_dev(u_int va, u_int pa, u_int len) {
 	return -E_INVAL;
 }
 
+int sys_set_signal_entry(u_int envid, u_int func) {
+	struct Env *env;
+
+	try(envid2env(envid, &env, 1));	
+	env->env_signal_entry = func;
+	return 0;
+}
+
+int sys_sigaction(u_int envid, int signum, const struct sigaction *act, struct sigaction *oldact) {
+	struct Env *env;
+
+	try(envid2env(envid, &env, 1));	
+	// 判断signum是否合法
+	if (signum <= 0 || signum > 64) {
+		return -1;
+	}
+
+	if (oldact) {
+		*oldact = env->env_sigactions[signum - 1];
+	}
+	printk("开始注册\n");
+	env->env_sigactions[signum - 1] = *act;
+	printk("注册后，env->env_sigactions[signum - 1].sa_handler=%x\n", env->env_sigactions[signum - 1].sa_handler);
+	return 0;
+}
+
+int sys_sigprocmask(u_int envid, int how, const sigset_t *set, sigset_t *oldset) {
+	struct Env *env;
+
+	try(envid2env(envid, &env, 1));	
+
+	if (oldset) {
+		*oldset = env->env_signal_mask;
+	}
+
+	if (!how) {
+		env->env_signal_mask.sig[0] |= set->sig[0];
+		env->env_signal_mask.sig[1] |= set->sig[1];
+	} else if (how == 1) {
+		env->env_signal_mask.sig[0] &= ~set->sig[0];
+		env->env_signal_mask.sig[1] &= ~set->sig[1];
+	} else if (how == 2) {
+		env->env_signal_mask = *set;
+	} else {
+		return -1;
+	}
+
+	return 0;
+}
+
+struct Int Ints[1024];
+u_int Ints_bit_map[32]; // 1表示已用
+
+int getInt(struct Int **newInt) {
+	for (int i = 0; i < 32; i++) {
+		for (int j = 0; j < 32; j++) {
+			if (!(Ints_bit_map[i] & (1<<j))) {
+				Ints_bit_map[i] |= 1<<j;
+				*newInt = Ints + 32 * i + j;
+				return 0;
+			}
+		}
+	}
+	return -1;
+}
+
+int send_signal(u_int envid, int sig) {
+	struct Env *env;
+
+	if (envid2env(envid, &env, 0) < 0) {
+		return -1;
+	}	
+	// 判断sig是否合法
+	if (sig <= 0 || sig > 64) {
+		return -1;
+	}
+
+	// 发送信号
+	struct Int *newInt;
+	try(getInt(&newInt));
+	newInt->val = sig;
+	TAILQ_INSERT_TAIL(&(env->env_blocking_signals), newInt, link);
+	return 0;
+}
+
+int sys_kill(u_int envid, int sig) {
+	return send_signal(envid, sig);
+}
+
+int is_block_signal(struct Env *env, int sig) {
+	sigset_t *set;
+	if (env->env_signal <= 0) {
+		set = &(env->env_signal_mask);
+	} else {
+		set = &(env->env_sigactions[env->env_signal - 1].sa_mask);
+	}
+	return set->sig[(sig - 1)/32] & (1 << (sig - 1)%32);
+}
+
+void do_signal(struct Trapframe *tf) {
+	struct Int *i;
+	for (i = curenv->env_blocking_signals.tqh_first; i; ) {
+		if (!is_block_signal(curenv, i->val)) {
+			struct Int *temp = (i->link.tqe_next);
+			TAILQ_REMOVE(&(curenv->env_blocking_signals), i, link);
+			TAILQ_INSERT_TAIL(&(curenv->env_pending_signals), i, link);
+			i = temp;
+			continue;
+		}
+		i = i->link.tqe_next;
+	}
+	if (TAILQ_EMPTY(&(curenv->env_pending_signals))) {
+		return;
+	}
+	i = TAILQ_FIRST(&(curenv->env_pending_signals));
+	TAILQ_REMOVE(&(curenv->env_pending_signals), i, link);
+	curenv->env_signal = i->val;
+	Ints_bit_map[(i - Ints)/32] &= ~(1 << ((i - Ints)%32));
+
+	// 保存Trapframe
+	struct Trapframe tmp_tf = *tf;
+
+	if (tf->regs[29] < USTACKTOP || tf->regs[29] >= UXSTACKTOP) {
+		tf->regs[29] = UXSTACKTOP;
+	}
+	tf->regs[29] -= sizeof(struct Trapframe);
+	*(struct Trapframe *)tf->regs[29] = tmp_tf;
+
+	if (curenv->env_signal_entry) {
+		tf->regs[4] = i->val;
+		tf->regs[5] = tf->regs[29];
+		tf->regs[29] -= sizeof(tf->regs[4]);
+		tf->cp0_epc = curenv->env_signal_entry;
+	} else {
+		panic("Get signal but no signal entry registered");
+	}
+
+}
+
+int sys_recover_after_signal(struct Trapframe *tf) {
+	curenv->env_signal = 0;
+	return sys_set_trapframe(0, tf);
+}
+
 void *syscall_table[MAX_SYSNO] = {
     [SYS_putchar] = sys_putchar,
     [SYS_print_cons] = sys_print_cons,
@@ -501,6 +651,11 @@ void *syscall_table[MAX_SYSNO] = {
     [SYS_cgetc] = sys_cgetc,
     [SYS_write_dev] = sys_write_dev,
     [SYS_read_dev] = sys_read_dev,
+	[SYS_set_signal_entry] = sys_set_signal_entry,
+	[SYS_sigaction] = sys_sigaction,
+	[SYS_sigprocmask] = sys_sigprocmask,
+	[SYS_kill] = sys_kill,
+	[SYS_recover_after_signal] = sys_recover_after_signal
 };
 
 /* Overview:

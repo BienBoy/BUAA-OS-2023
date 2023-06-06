@@ -7,6 +7,7 @@
 #include <pmap.h>
 #include <syscall.h>
 #include <trap.h>
+#include <signal.h>
 
 #define vpt ((volatile Pte *)UVPT)
 #define vpd ((volatile Pde *)(UVPT + (PDX(UVPT) << PGSHIFT)))
@@ -68,6 +69,12 @@ int syscall_ipc_recv(void *dstva);
 int syscall_cgetc();
 int syscall_write_dev(void *, u_int, u_int);
 int syscall_read_dev(void *, u_int, u_int);
+
+int syscall_set_signal_entry(u_int envid, void (*func)(int signum, struct Trapframe *tf));
+int syscall_sigaction(u_int envid, int signum, const struct sigaction *act, struct sigaction *oldact);
+int syscall_sigprocmask(u_int envid, int how, const sigset_t *set, sigset_t *oldset);
+int syscall_kill(u_int envid, int sig);
+int syscall_recover_after_signal(struct Trapframe *tf);
 
 // ipc.c
 void ipc_send(u_int whom, u_int val, const void *srcva, u_int perm);
@@ -136,5 +143,17 @@ int sync(void);
 #define O_TRUNC 0x0200 /* truncate to zero length */
 #define O_EXCL 0x0400  /* error if already exists */
 #define O_MKDIR 0x0800 /* create directory, not regular file */
+
+// 信号处理相关函数
+static void __attribute__((noreturn)) signal_entry(int signum, struct Trapframe *tf);
+int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact); // 信号的注册函数
+int sigprocmask(int how, const sigset_t *set, sigset_t *oldset); // 修改进程的信号掩码
+void sigemptyset(sigset_t *set); // 清空信号集，将所有位都设置为 0
+void sigfillset(sigset_t *set); // 设置信号集，即将所有位都设置为 1
+void sigaddset(sigset_t *set, int signum); // 向信号集中添加一个信号，即将指定信号的位设置为 1
+void sigdelset(sigset_t *set, int signum); // 从信号集中删除一个信号，即将指定信号的位设置为 0
+int sigismember(const sigset_t *set, int signum); // 检查一个信号是否在信号集中，如果在则返回 1，否则返回 0
+
+int kill(u_int envid, int sig); // 发送信号
 
 #endif

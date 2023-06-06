@@ -5,6 +5,7 @@ INITAPPS             := tltest.x fktest.x pingpong.x
 USERLIB              := entry.o \
 			syscall_wrap.o \
 			debugf.o \
+			signal.o \
 			libos.o \
 			fork.o \
 			syscall_lib.o \
